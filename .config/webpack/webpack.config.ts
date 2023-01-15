@@ -11,11 +11,14 @@ import LiveReloadPlugin from 'webpack-livereload-plugin';
 import path from 'path';
 import ReplaceInFileWebpackPlugin from 'replace-in-file-webpack-plugin';
 import { Configuration } from 'webpack';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 
 import { getPackageJson, getPluginId, hasReadme, getEntries } from './utils';
 import { SOURCE_DIR, DIST_DIR } from './constants';
+import nodeExternals from 'webpack-node-externals';
 
 const config = async (env): Promise<Configuration> => ({
+  target: 'node',
   cache: {
     type: 'filesystem',
     buildDependencies: {
@@ -30,6 +33,7 @@ const config = async (env): Promise<Configuration> => ({
   entry: await getEntries(),
 
   externals: [
+    'sqlite3',
     'lodash',
     'jquery',
     'moment',
@@ -52,6 +56,7 @@ const config = async (env): Promise<Configuration> => ({
     '@grafana/ui',
     '@grafana/runtime',
     '@grafana/data',
+    nodeExternals(),
 
     // Mark legacy SDK imports as external if their name starts with the "grafana/" prefix
     ({ request }, callback) => {
@@ -71,6 +76,10 @@ const config = async (env): Promise<Configuration> => ({
 
   module: {
     rules: [
+      {
+        test: /\.html$/,
+        loader: 'html-loader',
+      },
       {
         exclude: /(node_modules)/,
         test: /\.[tj]sx?$/,
@@ -93,7 +102,7 @@ const config = async (env): Promise<Configuration> => ({
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"]
+        use: ['style-loader', 'css-loader'],
       },
       {
         exclude: /(node_modules)/,
@@ -108,6 +117,7 @@ const config = async (env): Promise<Configuration> => ({
           publicPath: `public/plugins/${getPluginId()}/img/`,
           outputPath: 'img/',
           filename: Boolean(env.production) ? '[hash][ext]' : '[name][ext]',
+          libraryTarget: 'commonjs2',
         },
       },
       {
@@ -194,10 +204,20 @@ const config = async (env): Promise<Configuration> => ({
     modules: [path.resolve(process.cwd(), 'src'), 'node_modules'],
     unsafeCache: true,
     fallback: {
-      "fs": false,
-      "util": false,
-      "path": false
-  },
+      fs: false,
+      tls: false,
+      net: false,
+      path: false,
+      zlib: false,
+      http: false,
+      https: false,
+      stream: false,
+      crypto: false,
+      os: false,
+      timers: false,
+      constants: false,
+      child_process: false,
+    },
   },
 });
 
